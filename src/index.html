@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>React Host Tool</title>
+    <link href="./styles/main.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800">React Host Tool</h1>
+                <p class="text-gray-600 mt-2">Deploy your React app with Docker and Ngrok</p>
+            </div>
+
+            <!-- Docker Status Message -->
+            <div id="dockerStatus" class="mb-6 p-4 rounded-lg bg-red-50 text-red-700 hidden">
+                Docker is not running. Please install and start Docker before using this tool.
+            </div>
+
+            <!-- Localhost Input -->
+            <div class="mb-6">
+                <label for="localhostInput" class="block text-gray-700">Enter your localhost URL (e.g., http://localhost:3000):</label>
+                <input type="text" id="localhostInput" class="w-full mt-2 p-2 border rounded" placeholder="http://localhost:3000">
+            </div>
+
+            <!-- Progress Section -->
+            <div id="progressSection" class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-2">Progress</h2>
+                <ul id="progressSteps" class="list-disc pl-6 text-gray-600">
+                    <li id="step1">Step 1: Checking Docker Status...</li>
+                    <li id="step2" class="hidden">Step 2: Checking React Server...</li>
+                    <li id="step3" class="hidden">Step 3: Starting Docker Container...</li>
+                    <li id="step4" class="hidden">Step 4: Setting up Ngrok...</li>
+                    <li id="step5" class="hidden">Done! Application hosted successfully.</li>
+                </ul>
+            </div>
+
+            <!-- Start Button -->
+            <div class="text-center mb-8">
+                <button id="startButton" onclick="startProcess()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                    Start
+                </button>
+            </div>
+
+            <!-- Logs Section -->
+            <div class="mb-4">
+                <h2 class="text-xl font-semibold text-gray-700 mb-2">Process Logs</h2>
+                <div id="logs" class="h-96 overflow-y-auto bg-gray-50 p-4 rounded-lg font-mono text-sm"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+
+        function addLog(message, type) {
+            const logsDiv = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            
+            const typeClasses = {
+                info: 'text-blue-600',
+                error: 'text-red-600',
+                success: 'text-green-600'
+            };
+            
+            logEntry.className = `mb-1 ${typeClasses[type] || 'text-gray-600'}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(logEntry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        function updateStep(stepId, status) {
+            const stepElement = document.getElementById(stepId);
+            stepElement.classList.remove('hidden');
+            stepElement.classList.add(status === 'success' ? 'text-green-600' : 'text-red-600');
+            stepElement.textContent += status === 'success' ? ' ✅' : ' ❌';
+        }
+
+        function startProcess() {
+            document.getElementById("startButton").disabled = true;
+
+            // Get the localhost URL entered by the user
+            const localhostUrl = document.getElementById("localhostInput").value.trim();
+
+            if (!localhostUrl) {
+                addLog('Please enter a valid localhost URL', 'error');
+                document.getElementById("startButton").disabled = false;
+                return;
+            }
+
+            ipcRenderer.send('start-process', localhostUrl);
+        }
+
+        ipcRenderer.on('status-update', (event, { type, message, step }) => {
+            addLog(message, type);
+
+            if (step) {
+                updateStep(step, type);
+            }
+
+            if (message.includes('Application hosted successfully at:')) {
+                const url = message.split('at: ')[1];
+                const successStep = document.getElementById("step5");
+                successStep.classList.remove('hidden');
+                successStep.innerHTML = `Done! Application hosted successfully at: <a href="${url}" target="_blank" class="underline text-blue-700">${url}</a>`;
+            }
+        });
+
+        ipcRenderer.on('docker-status', (event, isRunning) => {
+            const dockerStatus = document.getElementById('dockerStatus');
+            if (!isRunning) {
+                dockerStatus.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>

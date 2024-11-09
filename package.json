@@ -1,0 +1,25 @@
+{
+  "name": "react-host-tool",
+  "version": "1.0.0",
+  "description": "React application hosting tool",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --inspect --unhandled-rejections=strict",
+    "build:css": "tailwindcss -i ./src/styles/tailwind.css -o ./src/styles/main.css --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "detect-port": "^1.6.1",
+    "electron": "^33.2.0",
+    "express": "^4.21.1",
+    "http-proxy": "^1.18.1",
+    "ngrok": "^5.0.0-beta.2",
+    "selfsigned": "^2.4.1"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.14"
+  }
+}
